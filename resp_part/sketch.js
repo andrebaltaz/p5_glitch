@@ -21,7 +21,8 @@ function setup() {
   corG = 0;
   corB = 0;
   background(0);
-  nboids = windowWidth / 15;
+  nboids=5;
+//  nboids = windowWidth / 15;
   // Add an initial set of boids into the system
   doboids();
 }
