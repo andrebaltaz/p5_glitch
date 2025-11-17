@@ -123,6 +123,13 @@ class Boid {
   render() {
     //blendMode(LIGHTEST);
     //fill(corR, corG, corB)
+    // fazer a cor rodar continuamente
+this.colorR = (this.colorR + 1) % 256;  // passo 1
+this.colorG = (this.colorG + 2) % 256;  // passo 2 (mais rápido)
+this.colorB = (this.colorB + 3) % 256;  // passo 3 (ainda mais rápido)
+
+corRT = color(this.colorR, this.colorG, this.colorB);
+
     corRT = color(this.colorR, this.colorG, this.colorB);
     strokeWeight(0.1);
     // stroke(1);
