@@ -41,10 +41,18 @@ function draw() {
   //doboids();
   // }
 
+  if (frameCount > 1000) {
+    noStroke();
+    fill(0, 0, 0, 10); // preto com alfa baixo (10/255) → apaga devagar
+    rect(0, 0, width, height);
+  }
   // Run all the boids
   for (let i = 0; i < boids.length; i++) {
     boids[i].run(boids);
-
+fill(255);       // cor do texto (branco)
+noStroke();
+textSize(20);    // tamanho da letra
+text("Frame: " + frameCount, 20, 30); // posição x=20, y=30
     //background(5, 5, 0);
   }
 }
