@@ -1,18 +1,24 @@
 /**
- * Espirógrafo / Spirograph (Hypotrochoid)
- * Usa 3 parâmetros clássicos:
- *  R = raio do círculo fixo
- *  r = raio do círculo rolante
- *  d = distância do ponto ao centro do círculo rolante
+ * Espirógrafo (Hypotrochoid)
+ * - Desenho persistente (buffer pg)
+ * - Ajuste automático ao tamanho da janela
+ * - Sliders RGB
  */
 
 let RSlider, rSlider, dSlider, speedSlider;
+let rColorSlider, gColorSlider, bColorSlider;
 let t = 0;
+let pg; // buffer persistente
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   pixelDensity(2);
   background(0);
+
+  // buffer onde fica o desenho
+  pg = createGraphics(windowWidth, windowHeight);
+  pg.pixelDensity(2);
+  pg.background(0);
 
   // UI
   RSlider = makeSlider("R (fixo)", 20, 400, 220, 1, 20);
@@ -20,57 +26,59 @@ function setup() {
   dSlider = makeSlider("d (offset)", 0, 300, 120, 1, 100);
   speedSlider = makeSlider("velocidade", 0.1, 5, 1.0, 0.1, 140);
 
-  stroke(255);
-  noFill();
+  // Sliders RGB
+  rColorSlider = makeSlider("R cor", 0, 255, 255, 1, 200);
+  gColorSlider = makeSlider("G cor", 0, 255, 255, 1, 240);
+  bColorSlider = makeSlider("B cor", 0, 255, 255, 1, 280);
 }
 
 function draw() {
-  // fade suave por frame (para ver o desenho a crescer)
-  background(0, 10);
-
-  translate(width / 2, height / 2);
+  // mostrar o buffer
+  image(pg, 0, 0);
 
   let R = RSlider.slider.value();
   let r = rSlider.slider.value();
   let d = dSlider.slider.value();
   let speed = speedSlider.slider.value();
 
-  // Desenhar curva acumulada
-  strokeWeight(1.2);
-  beginShape();
-  for (let a = 0; a < t; a += 0.01) {
-    let p = spiroPoint(R, r, d, a);
-    vertex(p.x, p.y);
-  }
-  endShape();
+  let colR = rColorSlider.slider.value();
+  let colG = gColorSlider.slider.value();
+  let colB = bColorSlider.slider.value();
 
-  // Ponto atual (cursor)
-  let pNow = spiroPoint(R, r, d, t);
-  noStroke();
-  fill(255);
-  circle(pNow.x, pNow.y, 5);
+  // ---- AUTO-SCALE PARA A JANELA ----
+  // raio máximo da trajetória
+  let maxRadius = abs(R - r) + d;
+  // raio máximo possível na janela
+  let windowRadius = min(width, height) * 0.45;
+  // fator de escala
+  let scaleFactor = windowRadius / maxRadius;
 
-  // Avança o tempo
+  // desenhar no buffer
+  pg.push();
+  pg.translate(pg.width / 2, pg.height / 2);
+  pg.scale(scaleFactor);
+
+  pg.noFill();
+  pg.stroke(colR, colG, colB);
+  pg.strokeWeight(1);
+
+  // desenhar segmento pequeno a cada frame
+  let pPrev = spiroPoint(R, r, d, t);
+  let pNow  = spiroPoint(R, r, d, t + 0.01);
+
+  pg.line(pPrev.x, pPrev.y, pNow.x, pNow.y);
+
+  pg.pop();
+
   t += 0.01 * speed;
-
-  // Reset quando fecha o ciclo (aproximação)
-  if (t > TWO_PI * lcm(R, r) / r) {
-    t = 0;
-    background(0);
-  }
 
   drawLabels();
 }
 
 function spiroPoint(R, r, d, a) {
-  // hypotrochoid:
-  // x = (R - r) cos a + d cos((R - r)/r * a)
-  // y = (R - r) sin a - d sin((R - r)/r * a)
   let k = (R - r) / r;
-
   let x = (R - r) * cos(a) + d * cos(k * a);
   let y = (R - r) * sin(a) - d * sin(k * a);
-
   return createVector(x, y);
 }
 
@@ -97,28 +105,29 @@ function makeSlider(label, min, max, val, step, y) {
 }
 
 function drawLabels() {
-  let sliders = [RSlider, rSlider, dSlider, speedSlider];
+  let sliders = [
+    RSlider, rSlider, dSlider, speedSlider,
+    rColorSlider, gColorSlider, bColorSlider
+  ];
   for (let obj of sliders) {
     obj.readout.html(" " + nf(obj.slider.value(), 1, 1));
   }
 }
 
-/* --- LCM approx for cycle reset --- */
-function gcd(a, b) {
-  a = floor(a); b = floor(b);
-  while (b !== 0) {
-    let tmp = b;
-    b = a % b;
-    a = tmp;
+function keyPressed() {
+  if (key === 'c' || key === 'C') {
+    pg.background(0);
+    t = 0;
   }
-  return a;
-}
-function lcm(a, b) {
-  a = floor(a); b = floor(b);
-  return abs(a * b) / gcd(a, b);
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  background(0);
+
+  // recriar buffer mantendo conteúdo
+  let old = pg;
+  pg = createGraphics(windowWidth, windowHeight);
+  pg.pixelDensity(2);
+  pg.background(0);
+  pg.image(old, 0, 0); // copiar o desenho existente
 }
